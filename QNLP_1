@@ -1,0 +1,135 @@
+from discopy import Ob, Ty
+
+egg, white, yolk = Ty('egg'), Ty('white'), Ty('yolk')
+
+assert egg.objects == [Ob('egg')]
+assert white @ yolk == Ty(Ob('white'), Ob('yolk'))
+
+assert egg @ Ty() == egg == Ty() @ egg
+assert egg @ (white @ yolk) == (egg @ white) @ yolk
+
+
+
+
+from discopy import Box
+
+crack = Box('crack', dom=egg, cod=white @ yolk)
+
+crack.draw(figsize=(2, 2))
+
+
+
+from discopy import drawing
+
+mix = Box('mix', white @ yolk, egg)
+
+crack_tensor_mix = crack @ mix
+crack_then_mix = crack >> mix
+
+drawing.equation(crack_tensor_mix, crack_then_mix, space=2, symbol=', ', figsize=(8, 2))
+
+
+
+from discopy import Id
+
+assert crack >> Id(white @ yolk) == crack == Id(egg) >> crack
+assert crack @ Id(Ty()) == crack == Id(Ty()) @ crack
+
+sugar, yolky_paste = Ty('sugar'), Ty('yolky_paste')
+beat = Box('beat', yolk @ sugar, yolky_paste)
+
+crack_then_beat = crack @ Id(sugar) >> Id(white) @ beat
+
+crack_then_beat.draw(figsize=(3, 2))
+
+
+
+
+from discopy import Swap
+
+merge = lambda x: Box('merge', x @ x, x)
+
+crack_two_eggs = crack @ crack\
+    >> Id(white) @ Swap(yolk, white) @ Id(yolk)\
+    >> merge(white) @ merge(yolk)
+
+crack_two_eggs.draw(figsize=(3, 4))
+
+
+
+from discopy import Diagram
+
+def pretty(diagram):
+    return "Diagram(\n"\
+    + "    dom={},\n".format(repr(diagram.dom))\
+    + "    cod={},\n".format(repr(diagram.cod))\
+    + "    boxes=[{}],\n".format(',\n           '.join(map(repr, diagram.boxes)))\
+    + "    offsets={})".format(diagram.offsets)
+
+assertion = "assert crack_two_eggs == {}".format(pretty(crack_two_eggs))
+
+exec(assertion)
+print(assertion)
+
+
+from discopy import Functor
+
+crack2 = Box("crack", egg @ egg, white @ yolk)
+
+open_crack2 = Functor(
+    ob=lambda x: x,
+    ar={crack2: crack_two_eggs, beat: beat})
+
+crack2_then_beat = crack2 @ Id(sugar) >> Id(white) @ beat
+
+drawing.equation(
+    crack2_then_beat,
+    open_crack2(crack2_then_beat),
+    symbol='$\\mapsto$', figsize=(7, 3.5))
+    
+    
+    oeuf, blanc, jaune, sucre = Ty("oeuf"), Ty("blanc"), Ty("jaune"), Ty("sucre")
+
+ouvrir = Box("ouvrir", oeuf, blanc @ jaune)
+battre = Box("battre", jaune @ sucre, jaune)
+
+english2french = Functor(
+    ob={egg: oeuf,
+        white: blanc,
+        yolk: jaune,
+        sugar: sucre,
+        yolky_paste: jaune},
+    ar={crack: ouvrir,
+        beat: battre})
+
+english2french(crack_then_beat).draw(figsize=(3, 2))
+
+
+
+
+
+
+melanger = lambda x: Box("mélanger", x @ x, x)
+
+for x in [white, yolk]:
+    english2french.ar[merge(x)] = melanger(english2french(x))
+
+english2french(open_crack2(crack2_then_beat)).draw(figsize=(4, 4))
+
+
+
+
+from discopy.quantum import circuit, qubit, sqrt, X
+
+F_ = circuit.Functor(
+    ob={s: Ty(), n: qubit},
+    ar={Alice: Ket(0),
+        loves: sqrt(2) @ Ket(0, 0) >> H @ X >> CX,
+        Bob: Ket(1)})
+
+F_(sentence).draw(figsize=(6, 6))
+
+assert F_(sentence).eval() == F(sentence)
+
+
+
